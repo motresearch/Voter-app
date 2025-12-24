@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voting Page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Khmer&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Khmer', Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+  header { background: #007bff; color: white; padding: 20px; text-align: center; }
+  .logo { font-size: 2em; font-weight: bold; }
+  .description { max-width: 800px; margin: 20px auto; padding: 0 15px; text-align: center; }
+  .container { max-width: 800px; margin: 20px auto; padding: 0 15px; overflow-x: auto; }
+  table { width: 100%; min-width: 600px; border-collapse: collapse; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  th, td { padding: 12px; text-align: center; border-bottom: 1px solid #ddd; }
+  th { background: #007bff; color: white; }
+  .name { text-align: left; }
+  .total-row { font-weight: bold; background: #e9ecef; }
+  @media (max-width: 600px) {
+    th, td { padding: 8px; font-size: 0.9em; }
+  }
+  button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; margin-top: 20px; }
+  button:hover { background: #0056b3; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">VoteApp</div>
+</header>
+<div class="description">
+  <p>Please assign points to all candidates. Each candidate can receive up to 9 points. You must assign at least one point to each candidate.</p>
+</div>
+<form id="voteForm" class="container">
+  <table id="votingTable">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th class="name">Name</th>
+        <th colspan="9">Points (check to assign)</th>
+        <th>Total</th>
+      </tr>
+      <tr>
+        <th></th>
+        <th></th>
+        <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows added by JavaScript -->
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="11">Total points assigned:</td>
+        <td id="totalAssigned">0</td>
+      </tr>
+    </tfoot>
+  </table>
+<button id="submitBtn" type="button">Submit Your Votes</button>
+</form>
+
+<script>
+  // Check if user has already voted
+  if (localStorage.getItem('voted') === 'true') {
+    document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Khmer, Arial, sans-serif;"><h1>You have already voted!</h1><p>Thank you for participating.</p></div>';
+  } else {
+    // Proceed with voting logic
+    const candidates = [
+      "ម៉ឹង សុវណ្ណដែន",
+      "តុប សុផាន",
+      "កង សានត្រាណ",
+      "ជោត ខេមរិទ្ធិ",
+      "ពឹង សុងពិសិដ្ឋ",
+      "ខែម បាន",
+      "ស ធិរាជ",
+      "ឈិន រតនា",
+      "វ៉ា សារិត",
+      "ចុង ស៊ីណា",
+      "ម៉ៅ វីរះ",
+      "សិញ ស៊ីផាវត្តីយ៍",
+      "ជើង សៅគន្ធវារី",
+      "សេង វិបុល",
+      "ផន ស្រីនី",
+      "រិទ្ធ បូរា",
+      "វ៉ូយ​​ លីហ្វុង",
+      "ជួន រក្សា",
+      "ដែន រស្មីមុន្នី",
+      "សុដា នីន"
+    ];
+
+    const tableBody = document.querySelector('#votingTable tbody');
+    const totalDisplay = document.getElementById('totalAssigned');
+
+    let totalAssigned = 0;
+
+    candidates.forEach((name, index) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${index + 1}</td>
+        <td class="name">${name}</td>
+        ${[1,2,3,4,5,6,7,8,9].map(p => `
+          <td><input type="checkbox" data-candidate="${index}" data-point="${p}"></td>
+        `).join('')}
+        <td class="total" id="total-${index}">0</td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        const candidate = this.dataset.candidate;
+        const totalCell = document.getElementById(`total-${candidate}`);
+
+        if (this.checked) {
+          totalAssigned += 1;
+        } else {
+          totalAssigned -= 1;
+        }
+
+        // Update candidate total
+        const checkedBoxes = document.querySelectorAll(`input[data-candidate="${candidate}"]:checked`);
+        totalCell.textContent = checkedBoxes.length;
+
+        totalDisplay.textContent = totalAssigned;
+      });
+    });
+
+    document.getElementById('submitBtn').addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      
+      const data = {};
+      candidates.forEach((name, index) => {
+        const total = document.getElementById(`total-${index}`).textContent;
+        const checked = Array.from(document.querySelectorAll(`input[data-candidate="${index}"]:checked`)).map(cb => parseInt(cb.dataset.point));
+        data[name] = { total: parseInt(total), checked: checked };
+      });
+      if (Object.values(data).some(v => v.total === 0)) {
+        alert('Please assign at least one point to each candidate.');
+        btn.disabled = false;
+        btn.textContent = 'Submit Your Votes';
+        return;
+      }
+      try {
+        const success = navigator.sendBeacon('https://script.google.com/macros/s/AKfycbyn_eMEvRtsYMXjCpfO0JPSw0M5XQgx9BqedHnT10B9Qt7XTWBTnJSLYpBGPQip5JTY/exec', JSON.stringify(data));
+        if (success) {
+          localStorage.setItem('voted', 'true');
+          document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Khmer, Arial, sans-serif;"><h1>Thank you for voting!</h1><p>Your votes have been submitted successfully.</p></div>';
+        } else {
+          alert('Failed to send votes. Please try again.');
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit Your Votes';
+      }
+    });
+  }
+</script>
+</body>
+</html>
